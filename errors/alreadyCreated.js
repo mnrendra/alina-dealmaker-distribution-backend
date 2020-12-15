@@ -1,9 +1,9 @@
 const alreadyCreated = (res, key, value) => {
-  res.status(400).json({
-    status: 400,
+  res.status(200).json({
+    status: 200,
     error: {
-      name: 'have been created!',
-      message: `${value} ${key} already created! please create another one or delete this one!`
+      name: 'Have been created!',
+      message: `${value} ${key} already created! Please create another one or delete this one!`
     }
   })
 }

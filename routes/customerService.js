@@ -2,15 +2,17 @@ const crypto = require('crypto')
 const router = require('express').Router()
 const { isValid } = require('mongoose').Types.ObjectId
 
-const { CustomerService } = require('../models')
-const { validator, keys } = require('../utils')
-const { notAllowedMethod, requireId, invalidField, alreadyCreated, invalidId, notFoundId } = require('../errors')
+const { HASH_KEY } = require('../config')
+const { validator } = require('../utils')
+const { CustomerService, SuperAdmin } = require('../models')
+const { notAllowedMethod, requireId, invalidField, alreadyCreated, invalidId, notFoundId, errorHandler } = require('../errors')
 
 // GET request
 router.get('/', async (req, res) => {
   const docs = await CustomerService.find()
   const rows = docs.map(({ _id, name, phone, active, isTurn, leads, created, updated }) => ({
     _id,
+    id: _id,
     name,
     phone,
     active,
@@ -43,6 +45,7 @@ router.get('/:id', async (req, res) => {
   const { _id, name, phone, created, updated } = doc
   res.status(200).json({
     _id,
+    id: _id,
     name,
     phone,
     created,
@@ -63,18 +66,24 @@ router.post('/', async (req, res, next) => {
 
   const doc = await CustomerService.findOne({ phone: validPhone })
   if (doc) {
-    alreadyCreated(res, 'phone', validPhone)
+    alreadyCreated(res, 'Phone', validPhone)
+    return
+  }
+
+  const docAdminPhone = await SuperAdmin.findOne({ phone: validPhone })
+  if (docAdminPhone) {
+    alreadyCreated(res, 'Phone', validPhone)
     return
   }
 
   const docName = await CustomerService.findOne({ name })
   if (docName) {
-    alreadyCreated(res, 'name', validPhone)
+    alreadyCreated(res, 'Name', name)
     return
   }
 
   const hash = crypto
-    .createHmac('sha256', keys.hash)
+    .createHmac('sha256', HASH_KEY)
     .update(password)
     .digest('hex')
 
@@ -89,17 +98,17 @@ router.post('/', async (req, res, next) => {
     const { _id, name, phone, active, isTurn, created, updated } = await newCustomerService.save()
     res.status(201).json({
       status: 201,
-      success: {
-        name: 'Success save new CustomerService!',
-        data: {
-          id: _id,
-          name,
-          phone,
-          active,
-          isTurn,
-          created,
-          updated
-        }
+      success: true,
+      message: 'Success save new CustomerService!',
+      data: {
+        _id,
+        id: _id,
+        name,
+        phone,
+        active,
+        isTurn,
+        created,
+        updated
       }
     })
   } catch (e) {
@@ -110,6 +119,7 @@ router.post('/', async (req, res, next) => {
 // PUT request
 router.put('/', requireId)
 router.put('/:id', async (req, res, next) => {
+  const { name, phone, password } = req.body
   const { id } = req.params
 
   if (!isValid(id)) {
@@ -125,8 +135,6 @@ router.put('/:id', async (req, res, next) => {
 
   const updatedCustomerService = doc
 
-  const { name, phone, password } = req.body
-
   if (phone) {
     const { validPhone, dialCode, cellularCode } = validator.validatePhone(phone)
 
@@ -137,7 +145,13 @@ router.put('/:id', async (req, res, next) => {
 
     const thisDoc = await CustomerService.findOne({ phone: validPhone })
     if (thisDoc && (thisDoc.phone !== doc.phone)) {
-      alreadyCreated(res, 'phone', validPhone)
+      alreadyCreated(res, 'Phone', validPhone)
+      return
+    }
+
+    const thisAdminDoc = await SuperAdmin.findOne({ phone: validPhone })
+    if (thisAdminDoc && (thisAdminDoc.phone !== doc.phone)) {
+      alreadyCreated(res, 'Phone', validPhone)
       return
     }
 
@@ -147,7 +161,7 @@ router.put('/:id', async (req, res, next) => {
   if (name) {
     const thisDoc = await CustomerService.findOne({ name })
     if (thisDoc && (thisDoc.name !== doc.name)) {
-      alreadyCreated(res, 'name', name)
+      alreadyCreated(res, 'Name', name)
       return
     }
 
@@ -156,9 +170,10 @@ router.put('/:id', async (req, res, next) => {
 
   if (password) {
     const hash = crypto
-      .createHmac('sha256', keys.hash)
+      .createHmac('sha256', HASH_KEY)
       .update(password)
       .digest('hex')
+
     updatedCustomerService.password = hash
   }
 
@@ -166,15 +181,15 @@ router.put('/:id', async (req, res, next) => {
     const { _id, name, phone, created, updated } = await updatedCustomerService.save()
     res.status(201).json({
       status: 200,
-      success: {
-        name: 'Success update existing CustomerService!',
-        data: {
-          _id,
-          name,
-          phone,
-          created,
-          updated
-        }
+      success: true,
+      message: 'Success update existing CustomerService!',
+      data: {
+        _id,
+        id: _id,
+        name,
+        phone,
+        created,
+        updated
       }
     })
   } catch (e) {
@@ -202,30 +217,25 @@ router.delete('/:id', async (req, res, next) => {
     const { ok } = await CustomerService.deleteOne({ _id: id })
 
     if (!ok) {
-      res.status(200).json({
-        status: 200,
-        success: {
-          name: 'Can\'t delete CustomerService!',
-          data: {
-            id,
-            status: 'havn\'t deleted yet'
-          }
-        }
-      })
+      errorHandler({
+        name: 'Can\'t delete CustomerService (' + id + ')!',
+        message: 'Response of CustomerService.deleteOne() is not "ok"!',
+        stack: null
+      }, req, res, next)
     } else {
       res.status(200).json({
         status: 200,
-        success: {
-          name: 'Success delete CustomerService!',
-          data: {
-            id,
-            status: 'deleted'
-          }
+        success: true,
+        name: 'Success delete CustomerService!',
+        data: {
+          _id: id,
+          id,
+          status: 'deleted'
         }
       })
     }
   } catch (e) {
-    next('Can\'t update CustomerService (id: ' + id + ')')
+    next('Can\'t delete CustomerService (id: ' + id + ')')
   }
 })
 

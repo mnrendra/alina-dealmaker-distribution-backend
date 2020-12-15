@@ -2,11 +2,11 @@
  * invalidJsonHandler function
  */
 const invalidJsonHandler = (err, req, res, next) => {
-  err && res.status(400).json({
-    status: 400,
+  err && res.status(200).json({
+    status: 200,
     error: {
-      name: 'invalid json!',
-      message: 'please send valid json'
+      name: 'Invalid JSON!',
+      message: 'Please send valid JSON!'
     }
   })
 }

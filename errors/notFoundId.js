@@ -1,8 +1,8 @@
 const notFoundId = (res, id) => {
-  res.status(400).json({
-    status: 400,
+  res.status(200).json({
+    status: 200,
     error: {
-      name: 'not found id!',
+      name: 'Not found Id!',
       message: `${id} id is not found! Please input the correct id!`
     }
   })

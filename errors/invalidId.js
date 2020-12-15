@@ -1,8 +1,8 @@
 const invalidId = (res, id) => {
-  res.status(400).json({
-    status: 400,
+  res.status(200).json({
+    status: 200,
     error: {
-      name: 'invalid id!',
+      name: 'Invalid Id!',
       message: `${id} is not valid id! Please input the correct id!`
     }
   })

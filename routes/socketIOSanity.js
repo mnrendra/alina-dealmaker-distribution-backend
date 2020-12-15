@@ -1,6 +1,6 @@
 const router = require('express').Router()
 
-// POST request
+// GET request
 router.get('/', (req, res) => {
   res.status(200).send({
     ok: true

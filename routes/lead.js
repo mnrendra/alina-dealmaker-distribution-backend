@@ -7,60 +7,67 @@ const { notAllowedMethod, requireId, invalidField, alreadyCreated, invalidId, no
 
 const leadRoute = (io = {}) => {
   // GET request
-  router.get('/', async (req, res) => {
-    const { dealmaker, year, month, date, alltime } = req.query
+  router.get('/', async (req, res, next) => {
+    const { dealmaker, alltime, time } = req.query
 
     const filter = {}
 
-    if (isValid(dealmaker)) {
-      filter.customerService = dealmaker
-    }
-
-    const now = new Date()
-    const _year = Number(year) || now.getFullYear()
-    const _month = Number(month) || now.getMonth()
-    const _date = Number(date) || now.getDate()
-
-    if (!alltime && _year && _month && _date) {
-      const gte = new Date(`${_year}-${_month}-${_date}`)
-      if (!isNaN(gte.getTime())) {
-        const ltTime = gte.getTime() + (1000 * 60 * 60 * 24 * 1)
-        const lt = new Date(ltTime)
-        filter.created = { $gte: gte, $lt: lt }
+    if (dealmaker) {
+      if (!isValid(dealmaker)) {
+        invalidId(res, dealmaker)
+        return
+      } else {
+        filter.customerService = dealmaker
       }
     }
 
-    const docs = await Lead.find(filter)
-    const leads = docs.map(async ({ _id, name, phone, customerService, created, updated }) => {
-      const cs = await CustomerService.findOne({ _id: customerService })
-      return {
-        _id,
-        name,
-        phone,
-        customerService: {
-          _id: cs._id,
-          name: cs.name,
-          phone: cs.phone,
-          active: cs.active,
-          isTurn: cs.isTurn,
-          created: cs.created,
-          updated: cs.updated
-        },
-        created,
-        updated
-      }
-    })
+    if (!alltime) {
+      const gteTime = !isNaN(new Date(Number(time)).getTime()) ? Number(time) : new Date().getTime()
+      const ltTime = gteTime + (1000 * 60 * 60 * 24 * 1)
+      const gte = new Date(gteTime)
+      const lt = new Date(ltTime)
+      filter.created = { $gte: gte, $lt: lt }
+    }
 
-    const rows = await Promise.all(leads)
+    try {
+      const docs = await Lead.find(filter)
+      const leads = docs.map(async ({ _id, name, phone, customerService, created, updated }) => {
+        const cs = await CustomerService.findOne({ _id: customerService })
+        return {
+          _id,
+          id: _id,
+          name,
+          phone,
+          customerServiceId: cs._id,
+          customerService: {
+            _id: cs._id,
+            id: cs._id,
+            name: cs.name,
+            phone: cs.phone,
+            active: cs.active,
+            isTurn: cs.isTurn,
+            created: cs.created,
+            updated: cs.updated
+          },
+          created,
+          updated
+        }
+      })
 
-    res.status(200).json({
-      date: filter.created ? _year + '-' + _month + '-' + _date : 'All time',
-      total: docs.length,
-      rows
-    })
+      const rows = await Promise.all(leads)
+      const sortByLatest = rows.sort((a, b) => new Date(b.created).getTime() - new Date(a.created).getTime())
+
+      res.status(200).json({
+        date: filter.created ? new Date(time) : 'All time',
+        total: docs.length,
+        rows: sortByLatest
+      })
+    } catch (e) {
+      next('Can\'t get leads', e)
+    }
   })
 
-  router.get('/:id', async (req, res) => {
+  router.get('/:id', async (req, res, next) => {
     const { id } = req.params
 
     if (!isValid(id)) {
@@ -68,82 +75,97 @@ const leadRoute = (io = {}) => {
       return
     }
 
-    const doc = await Lead.findOne({ _id: id })
-    if (!doc) {
-      notFoundId(res, id)
-      return
-    }
+    try {
+      const doc = await Lead.findOne({ _id: id })
+      if (!doc) {
+        notFoundId(res, id)
+        return
+      }
 
-    const { _id, name, phone, created, updated } = doc
-    res.status(200).json({
-      _id,
-      name,
-      phone,
-      created,
-      updated
-    })
+      const { _id, name, phone, created, updated } = doc
+      res.status(200).json({
+        _id,
+        id: _id,
+        name,
+        phone,
+        created,
+        updated
+      })
+    } catch (e) {
+      next('Can\'t get lead ' + id, e)
+    }
   })
 
   // POST request
   router.post('/', async (req, res, next) => {
-    const { name, phone } = req.body
-
-    const { validPhone, dialCode, cellularCode } = validator.validatePhone(phone)
-
-    if (!validPhone || !(dialCode || cellularCode)) {
-      invalidField(res, 'Invalid phone number!')
-      return
-    }
-
-    const doc = await Lead.findOne({ phone: validPhone })
-    if (doc) {
-      alreadyCreated(res, 'phone', validPhone)
-      return
-    }
-
-    const docName = await Lead.findOne({ name })
-    if (docName) {
-      alreadyCreated(res, 'name', validPhone)
-      return
-    }
-
-    const customerServices = await CustomerService.find()
-    const activeCustomerServices = customerServices.filter(cs => cs.active)
-
-    const isEnd = i => i === (activeCustomerServices.length - 1)
-
-    let currentTurn = {}
-    let nextTurn = {}
-    for (let i = 0; i < activeCustomerServices.length; i++) {
-      if (activeCustomerServices[i].isTurn) {
-        currentTurn = activeCustomerServices[i]
-        nextTurn = isEnd(i)
-          ? activeCustomerServices[0]
-          : activeCustomerServices[i + 1]
-        break
-      } else if (isEnd(i)) {
-        currentTurn = activeCustomerServices[0]
-        nextTurn = activeCustomerServices[1]
-      }
-    }
-
-    const newLead = new Lead({
-      name,
-      phone: validPhone,
-      customerService: currentTurn._id
-    })
-
     try {
-      const { _id, name, phone, customerService, created, updated } = await newLead.save()
+      const { name, phone } = req.body
+
+      const { validPhone, dialCode, cellularCode } = validator.validatePhone(phone)
+
+      if (!validPhone || !(dialCode || cellularCode)) {
+        invalidField(res, 'Invalid phone number!')
+        return
+      }
+
+      const doc = await Lead.findOne({ phone: validPhone })
+      if (doc) {
+        alreadyCreated(res, 'Phone', validPhone)
+        return
+      }
+
+      const docName = await Lead.findOne({ name })
+      if (docName) {
+        alreadyCreated(res, 'Name', name)
+        return
+      }
+
+      const customerServices = await CustomerService.find()
+      const activeCustomerServices = customerServices.filter(cs => cs.active && !cs.terminate)
+
+      const isEnd = i => i === (activeCustomerServices.length - 1)
+
+      let currentTurn = {}
+      let nextTurn = {}
+      for (let i = 0; i < activeCustomerServices.length; i++) {
+        if (activeCustomerServices[i].isTurn) {
+          currentTurn = activeCustomerServices[i]
+          nextTurn = isEnd(i)
+            ? activeCustomerServices[0]
+            : activeCustomerServices[i + 1]
+          break
+        } else if (isEnd(i)) {
+          currentTurn = activeCustomerServices[0]
+          nextTurn = activeCustomerServices[1]
+        }
+      }
+
+      const newLead = new Lead({
+        name,
+        phone: validPhone,
+        customerServiceId: currentTurn._id,
+        customerService: currentTurn._id
+      })
+
+      const savedNewLead = await newLead.save()
 
       currentTurn.isTurn = false
-      currentTurn.leads.push(_id)
+      currentTurn.leads.push(savedNewLead._id)
       const updatedCurrentTurn = await currentTurn.save()
 
       nextTurn.isTurn = true
       const updatedNextTurn = await nextTurn.save()
 
-      const data = { _id, name, phone, customerService, created, updated }
+      const data = {
+        _id: savedNewLead._id,
+        id: savedNewLead._id,
+        name: savedNewLead.name,
+        phone: savedNewLead.phone,
+        customerServiceId: savedNewLead.customerService,
+        customerService: savedNewLead.customerService,
+        created: savedNewLead.created,
+        updated: savedNewLead.updated
+      }
 
       io.to('' + updatedCurrentTurn._id).emit('new-leads', data)
 

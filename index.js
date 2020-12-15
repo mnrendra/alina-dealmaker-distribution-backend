@@ -1,10 +1,12 @@
 const { mongodb } = require('./db')
 const app = require('./app')
+const config = require('./config')
 
-// set port
-const PORT = process.env.PORT || 3001
+const PORT /* -------- */ = process.env.PORT /* -------- */ || config.PORT /* -------- */ || 3001
+const MONGODB_URL /* - */ = process.env.MONGODB_URL /* - */ || config.MONGODB_URL /* - */ || 'mongodb://localhost:27017/alina'
+const MONGODB_OPT /* - */ = process.env.MONGODB_OPT /* - */ || config.MONGODB_OPT /* - */ || {}
 
-mongodb()
+mongodb(MONGODB_URL, MONGODB_OPT)
   .then(res => {
     if (!res) throw new Error('MongoDB Error')
 

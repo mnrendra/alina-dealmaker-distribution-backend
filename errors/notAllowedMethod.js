@@ -1,8 +1,8 @@
 const notAllowedMethod = ({ method }, res) => {
-  res.status(405).json({
-    status: 405,
+  res.status(200).json({
+    status: 200,
     error: {
-      name: 'not allowed method',
+      name: 'Not allowed method',
       message: `${method} method is not allowed!`
     }
   })
