@@ -9,6 +9,7 @@ const leadRoute = (io = {}) => {
   // GET request
   router.get('/', async (req, res, next) => {
     const { dealmaker, alltime, time } = req.query
+    console.log('time', time)
 
     const filter = {}
 
@@ -156,13 +157,15 @@ const leadRoute = (io = {}) => {
       nextTurn.isTurn = true
       const updatedNextTurn = await nextTurn.save()
 
+      const cs = customerServices.find(cs => cs._id === savedNewLead.customerService)
+
       const data = {
         _id: savedNewLead._id,
         id: savedNewLead._id,
         name: savedNewLead.name,
         phone: savedNewLead.phone,
         customerServiceId: savedNewLead.customerService,
-        customerService: savedNewLead.customerService,
+        customerService: cs,
         created: savedNewLead.created,
         updated: savedNewLead.updated
       }
