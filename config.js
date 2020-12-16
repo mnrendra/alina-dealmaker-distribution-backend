@@ -1,7 +1,7 @@
 module.exports = {
   PORT: 3001,
-  MONGODB_URL: 'mongodb://localhost:27017/alina',
-  // MONGODB_URL: 'mongodb+srv://root:lRZVu5v6nlc9NUwj@cluster0.ks14j.mongodb.net/alina-cs?retryWrites=true&w=majority',
+  // MONGODB_URL: 'mongodb://localhost:27017/alina',
+  MONGODB_URL: 'mongodb+srv://root:lRZVu5v6nlc9NUwj@cluster0.ks14j.mongodb.net/alina-cs?retryWrites=true&w=majority',
   MONGODB_OPT: {
     useNewUrlParser: true,
     useCreateIndex: true,
