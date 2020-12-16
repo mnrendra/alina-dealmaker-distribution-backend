@@ -6,14 +6,10 @@ const SOCKETIO_OPT = process.env.SOCKETIO_OPT || config.SOCKETIO_OPT || {}
 
 const joinRoom = (socket, { type, userIds }) => {
   if (type === 'superAdmin') {
-    console.log('superAdmin:', userIds)
-
     userIds.forEach(userId => {
-      socket.join(userId)
+      socket.join('' + userId)
     })
   } else if (type === 'dealMaker') {
-    console.log('dealMaker:', '' + userIds[0])
-
     socket.join('' + userIds[0])
   } else {
     console.log('anonymous:', { type, userIds })

@@ -103,6 +103,8 @@ const leadRoute = (io = {}) => {
     try {
       const { name, phone } = req.body
 
+      console.log('asda', req.body)
+
       const { validPhone, dialCode, cellularCode } = validator.validatePhone(phone)
 
       if (!validPhone || !(dialCode || cellularCode)) {
