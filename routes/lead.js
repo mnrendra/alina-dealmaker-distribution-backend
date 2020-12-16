@@ -9,7 +9,6 @@ const leadRoute = (io = {}) => {
   // GET request
   router.get('/', async (req, res, next) => {
     const { dealmaker, alltime, time } = req.query
-    console.log('time', time)
 
     const filter = {}
 
@@ -22,8 +21,10 @@ const leadRoute = (io = {}) => {
       }
     }
 
+    let gteTime
     if (!alltime) {
-      const gteTime = !isNaN(new Date(Number(time)).getTime()) ? Number(time) : new Date().getTime()
+      const now = new Date()
+      gteTime = !isNaN(new Date(Number(time)).getTime()) ? Number(time) : new Date(`${now.getFullYear()}-${now.getMonth() + 1}-${now.getDate()}`).getTime()
       const ltTime = gteTime + (1000 * 60 * 60 * 24 * 1)
       const gte = new Date(gteTime)
       const lt = new Date(ltTime)
@@ -59,7 +60,7 @@ const leadRoute = (io = {}) => {
       const sortByLatest = rows.sort((a, b) => new Date(b.created).getTime() - new Date(a.created).getTime())
 
       res.status(200).json({
-        date: filter.created ? new Date(time) : 'All time',
+        date: filter.created ? new Date(gteTime) : 'All time',
         total: docs.length,
         rows: sortByLatest
       })
