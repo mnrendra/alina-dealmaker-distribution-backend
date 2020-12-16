@@ -1,5 +1,4 @@
 const express = require('express')
-// const bodyParser = require('body-parser')
 const helmet = require('helmet')
 const compression = require('compression')
 const cors = require('cors')
@@ -16,7 +15,6 @@ app.use(helmet())
 app.use(compression())
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
-// app.use(express.json())
 app.use(invalidJsonHandler)
 app.use(routes(io))
 

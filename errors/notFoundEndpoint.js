@@ -5,7 +5,7 @@ router.all('/', (req, res) => {
     status: 200,
     error: {
       name: '404 endpoint not found!',
-      message: 'please use the correct endpoint!'
+      message: 'Please use the correct endpoint!'
     }
   })
 })

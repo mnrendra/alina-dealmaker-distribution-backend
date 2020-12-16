@@ -1,6 +1,3 @@
-/**
- * invalidJsonHandler function
- */
 const invalidJsonHandler = (err, req, res, next) => {
   err && res.status(200).json({
     status: 200,

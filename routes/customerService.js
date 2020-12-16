@@ -10,14 +10,13 @@ const { notAllowedMethod, requireId, invalidField, alreadyCreated, invalidId, no
 // GET request
 router.get('/', async (req, res) => {
   const docs = await CustomerService.find()
-  const rows = docs.map(({ _id, name, phone, active, isTurn, leads, created, updated }) => ({
+  const rows = docs.map(({ _id, name, phone, active, isTurn, created, updated }) => ({
     _id,
     id: _id,
     name,
     phone,
     active,
     isTurn,
-    leads,
     created,
     updated
   }))
@@ -42,12 +41,14 @@ router.get('/:id', async (req, res) => {
     return
   }
 
-  const { _id, name, phone, created, updated } = doc
+  const { _id, name, phone, active, isTurn, created, updated } = doc
   res.status(200).json({
     _id,
     id: _id,
     name,
     phone,
+    active,
+    isTurn,
     created,
     updated
   })
@@ -96,8 +97,8 @@ router.post('/', async (req, res, next) => {
 
   try {
     const { _id, name, phone, active, isTurn, created, updated } = await newCustomerService.save()
-    res.status(201).json({
-      status: 201,
+    res.status(200).json({
+      status: 200,
       success: true,
       message: 'Success save new CustomerService!',
       data: {
@@ -179,7 +180,7 @@ router.put('/:id', async (req, res, next) => {
 
   try {
     const { _id, name, phone, created, updated } = await updatedCustomerService.save()
-    res.status(201).json({
+    res.status(200).json({
       status: 200,
       success: true,
       message: 'Success update existing CustomerService!',

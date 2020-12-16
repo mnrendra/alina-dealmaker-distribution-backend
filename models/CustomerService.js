@@ -29,10 +29,6 @@ const CustomerServiceSchema = new Schema({
   isTurn: {
     type: Boolean,
     default: false
-  },
-  leads: {
-    type: Array,
-    default: []
   }
 }, {
   timestamps: {

@@ -1,5 +1,5 @@
 module.exports = {
   listOfCountries: require('./countries.json'),
-  validator: require('./validator'),
-  keys: require('./keys')
+  listIDCellularCodes: require('./listIDCellularCodes.js'),
+  validator: require('./validator')
 }

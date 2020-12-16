@@ -1,8 +1,8 @@
 const router = require('express').Router()
 const { isValid } = require('mongoose').Types.ObjectId
 
-const { Lead, CustomerService } = require('../models')
 const { validator } = require('../utils')
+const { Lead, CustomerService } = require('../models')
 const { notAllowedMethod, requireId, invalidField, alreadyCreated, invalidId, notFoundId } = require('../errors')
 
 const leadRoute = (io = {}) => {
@@ -103,8 +103,6 @@ const leadRoute = (io = {}) => {
     try {
       const { name, phone } = req.body
 
-      console.log('asda', req.body)
-
       const { validPhone, dialCode, cellularCode } = validator.validatePhone(phone)
 
       if (!validPhone || !(dialCode || cellularCode)) {
@@ -154,7 +152,6 @@ const leadRoute = (io = {}) => {
       const savedNewLead = await newLead.save()
 
       currentTurn.isTurn = false
-      currentTurn.leads.push(savedNewLead._id)
       const updatedCurrentTurn = await currentTurn.save()
 
       nextTurn.isTurn = true
@@ -175,8 +172,8 @@ const leadRoute = (io = {}) => {
 
       io.to('' + updatedCurrentTurn._id).emit('new-leads', data)
 
-      res.status(201).json({
-        status: 201,
+      res.status(200).json({
+        status: 200,
         success: {
           name: 'Success save new Lead!',
           data: {
@@ -240,7 +237,7 @@ const leadRoute = (io = {}) => {
 
     try {
       const { _id, name, phone, created, updated } = await updatedLead.save()
-      res.status(201).json({
+      res.status(200).json({
         status: 200,
         success: {
           name: 'Success update existing Lead!',

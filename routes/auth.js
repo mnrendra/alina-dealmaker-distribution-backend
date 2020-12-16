@@ -2,8 +2,9 @@ const crypto = require('crypto')
 const router = require('express').Router()
 const jwt = require('jsonwebtoken')
 
+const { HASH_KEY } = require('../config')
+const { validator } = require('../utils')
 const { SuperAdmin, CustomerService } = require('../models')
-const { validator, keys } = require('../utils')
 const { notAllowedMethod, invalidField } = require('../errors')
 
 // POST request
@@ -22,7 +23,7 @@ router.post('/', async (req, res, next) => {
     const customerService = await CustomerService.findOne({ phone: validPhone })
 
     const hash = crypto
-      .createHmac('sha256', keys.hash)
+      .createHmac('sha256', HASH_KEY)
       .update(password)
       .digest('hex')
 
@@ -32,7 +33,7 @@ router.post('/', async (req, res, next) => {
 
     const checkPassword = (data = {}, type = '') => {
       if (hash === data.password) {
-        const token = jwt.sign({ type, data }, keys.hash)
+        const token = jwt.sign({ type, data }, HASH_KEY)
         sendResponse({ token })
       } else {
         sendResponse({ invalid: 'Password is invalid!' })

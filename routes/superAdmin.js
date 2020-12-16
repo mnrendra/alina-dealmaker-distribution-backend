@@ -92,8 +92,8 @@ router.post('/', async (req, res, next) => {
 
   try {
     const { _id, name, phone, created, updated } = await newSuperAdmin.save()
-    res.status(201).json({
-      status: 201,
+    res.status(200).json({
+      status: 200,
       success: true,
       message: 'Success save new SuperAdmin!',
       data: {
@@ -173,7 +173,7 @@ router.put('/:id', async (req, res, next) => {
 
   try {
     const { _id, name, phone, created, updated } = await updatedSuperAdmin.save()
-    res.status(201).json({
+    res.status(200).json({
       status: 200,
       success: true,
       message: 'Success update existing SuperAdmin!',
