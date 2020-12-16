@@ -29,6 +29,10 @@ const CustomerServiceSchema = new Schema({
   isTurn: {
     type: Boolean,
     default: false
+  },
+  terminate: {
+    type: Boolean,
+    default: false
   }
 }, {
   timestamps: {

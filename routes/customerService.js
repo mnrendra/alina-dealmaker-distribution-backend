@@ -120,7 +120,7 @@ router.post('/', async (req, res, next) => {
 // PUT request
 router.put('/', requireId)
 router.put('/:id', async (req, res, next) => {
-  const { name, phone, password } = req.body
+  const { name, phone, password, active, terminate } = req.body
   const { id } = req.params
 
   if (!isValid(id)) {
@@ -176,6 +176,14 @@ router.put('/:id', async (req, res, next) => {
       .digest('hex')
 
     updatedCustomerService.password = hash
+  }
+
+  if (active === false || active === true) {
+    updatedCustomerService.active = active
+  }
+
+  if (terminate === false || terminate === true) {
+    updatedCustomerService.terminate = terminate
   }
 
   try {

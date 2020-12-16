@@ -110,18 +110,6 @@ const leadRoute = (io = {}) => {
         return
       }
 
-      const doc = await Lead.findOne({ phone: validPhone })
-      if (doc) {
-        alreadyCreated(res, 'Phone', validPhone)
-        return
-      }
-
-      const docName = await Lead.findOne({ name })
-      if (docName) {
-        alreadyCreated(res, 'Name', name)
-        return
-      }
-
       const customerServices = await CustomerService.find()
       const activeCustomerServices = customerServices.filter(cs => cs.active && !cs.terminate)
 

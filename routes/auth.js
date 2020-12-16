@@ -11,6 +11,16 @@ const { notAllowedMethod, invalidField } = require('../errors')
 router.post('/', async (req, res, next) => {
   const { phone, password } = req.body
 
+  if (!phone) {
+    invalidField(res, 'Please fill in the phone number!')
+    return
+  }
+
+  if (!password) {
+    invalidField(res, 'Please fill in the password!')
+    return
+  }
+
   const { validPhone, dialCode, cellularCode } = validator.validatePhone(phone)
 
   if (!validPhone || !(dialCode || cellularCode)) {
