@@ -1,14 +1,14 @@
 {
-  "name": "alina-cs-distribution",
+  "name": "alina-dealmaker-distribution-backend",
   "version": "1.0.0",
-  "description": "",
+  "description": "Alina's Deal-Maker Distribution Backe-End",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "nodemon .",
-    "start": "node ."
+    "start": "pm2 start . --name alina-dealmaker-distribution-backend --watch -i max"
   },
-  "author": "",
+  "author": "https://github.com/mnrendra",
   "license": "ISC",
   "dependencies": {
     "body-parser": "^1.19.0",
