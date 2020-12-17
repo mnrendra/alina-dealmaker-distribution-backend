@@ -10,11 +10,11 @@ const { errorHandler, notFoundEndpoint } = require('../errors')
 
 const routes = (io = {}) => {
   // routing midlleware
-  router.use('/api/socket.io', socketIOSanity)
-  router.use('/api/super-admin', superAdmin)
-  router.use('/api/customer-service', customerService)
-  router.use('/api/auth', auth)
-  router.use('/api/lead', lead(io))
+  router.use('/socket.io', socketIOSanity)
+  router.use('/super-admin', superAdmin)
+  router.use('/customer-service', customerService)
+  router.use('/auth', auth)
+  router.use('/lead', lead(io))
   // error middleware
   router.use('/*', notFoundEndpoint)
   router.use(errorHandler)
