@@ -109,10 +109,10 @@ const leadRoute = (io = {}) => {
         invalidField(res, 'Invalid phone number!')
         return
       }
-
+console.log('G', { validPhone, dialCode, cellularCode })
       const customerServices = await CustomerService.find()
       const activeCustomerServices = customerServices.filter(cs => cs.active && !cs.terminate)
-
+console.log('F', { customerServices, activeCustomerServices })
       const isEnd = i => i === (activeCustomerServices.length - 1)
 
       let currentTurn = {}
@@ -129,14 +129,14 @@ const leadRoute = (io = {}) => {
           nextTurn = activeCustomerServices[1]
         }
       }
-
+console.log('E', { currentTurn, nextTurn })
       const newLead = new Lead({
         name,
         phone: validPhone,
         customerServiceId: currentTurn._id,
         customerService: currentTurn._id
       })
-
+console.log('D', newLead)
       const savedNewLead = await newLead.save()
 
       currentTurn.isTurn = false
@@ -146,7 +146,7 @@ const leadRoute = (io = {}) => {
       const updatedNextTurn = await nextTurn.save()
 
       const cs = customerServices.find(cs => cs._id === savedNewLead.customerService)
-
+console.log('C', cs)
       const data = {
         _id: savedNewLead._id,
         id: savedNewLead._id,
@@ -157,8 +157,10 @@ const leadRoute = (io = {}) => {
         created: savedNewLead.created,
         updated: savedNewLead.updated
       }
-
+console.log('A', data)
       io.to('' + updatedCurrentTurn._id).emit('new-leads', data)
+
+console.log('data', data)
 
       res.status(200).json({
         status: 200,
