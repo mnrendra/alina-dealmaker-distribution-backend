@@ -3,7 +3,7 @@ const { isValid } = require('mongoose').Types.ObjectId
 
 const { validator } = require('../utils')
 const { Lead, CustomerService } = require('../models')
-const { notAllowedMethod, requireId, invalidField, alreadyCreated, invalidId, notFoundId } = require('../errors')
+const { notAllowedMethod, requireId, invalidField, alreadyCreated, invalidId, notFoundId, invalidToken } = require('../errors')
 
 const leadRoute = (io = {}) => {
   // GET request
@@ -169,6 +169,38 @@ const leadRoute = (io = {}) => {
           currentCustomerService: updatedCurrentTurn._id,
           nextCustomerService: updatedNextTurn._id
         }
+      })
+    } catch (e) {
+      next('Can\t save new Lead!', e)
+    }
+  })
+
+  router.post('/by-script/:token', async (req, res, next) => {
+    try {
+      const { token } = req.params
+
+      if (!isValid(token) && token !== '5fdba43af3ad02074da81c07') {
+        invalidToken(res, token)
+        return
+      }
+
+      const { name, phone, customerService, created, updated } = req.body
+
+      const newLead = new Lead({
+        name,
+        phone,
+        customerService,
+        created,
+        updated
+      })
+
+      const savedNewLead = await newLead.save()
+
+      res.status(200).json({
+        status: 200,
+        success: true,
+        message: 'Success save new Lead!',
+        data: savedNewLead
       })
     } catch (e) {
       next('Can\t save new Lead!', e)

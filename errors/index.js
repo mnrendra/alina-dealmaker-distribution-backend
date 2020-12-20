@@ -6,6 +6,7 @@ module.exports = {
   invalidField: require('./invalidField'),
   alreadyCreated: require('./alreadyCreated'),
   invalidId: require('./invalidId'),
+  invalidToken: require('./invalidToken'),
   notFoundId: require('./notFoundId'),
   notFoundEndpoint: require('./notFoundEndpoint')
 }
