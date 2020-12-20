@@ -162,13 +162,12 @@ const leadRoute = (io = {}) => {
 
       res.status(200).json({
         status: 200,
-        success: {
-          name: 'Success save new Lead!',
-          data: {
-            ...data,
-            currentCustomerService: updatedCurrentTurn._id,
-            nextCustomerService: updatedNextTurn._id
-          }
+        success: true,
+        message: 'Success save new Lead!',
+        data: {
+          ...data,
+          currentCustomerService: updatedCurrentTurn._id,
+          nextCustomerService: updatedNextTurn._id
         }
       })
     } catch (e) {
@@ -227,15 +226,14 @@ const leadRoute = (io = {}) => {
       const { _id, name, phone, created, updated } = await updatedLead.save()
       res.status(200).json({
         status: 200,
-        success: {
-          name: 'Success update existing Lead!',
-          data: {
-            _id,
-            name,
-            phone,
-            created,
-            updated
-          }
+        success: true,
+        message: 'Success update existing Lead!',
+        data: {
+          _id,
+          name,
+          phone,
+          created,
+          updated
         }
       })
     } catch (e) {
