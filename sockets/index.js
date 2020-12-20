@@ -1,8 +1,8 @@
 const http = require('http')
 const socketIO = require('socket.io')
-// const config = require('../config')
+const config = require('../config')
 
-// const SOCKETIO_OPT = process.env.SOCKETIO_OPT || config.SOCKETIO_OPT || {}
+const SOCKETIO_OPT = process.env.SOCKETIO_OPT || config.SOCKETIO_OPT || {}
 
 const joinRoom = (socket, { type, userIds }) => {
   if (type === 'superAdmin') {
@@ -18,8 +18,8 @@ const joinRoom = (socket, { type, userIds }) => {
 
 const initSocketIO = (app) => {
   const server = http.createServer(app)
-  // const io = socketIO(server, SOCKETIO_OPT)
-  const io = socketIO(server)
+  const io = socketIO(server, SOCKETIO_OPT)
+  // const io = socketIO(server)
 
   io.on('connection', (socket) => {
     console.log('connected:', socket.id)
