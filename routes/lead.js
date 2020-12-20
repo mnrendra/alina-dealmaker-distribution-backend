@@ -99,38 +99,6 @@ const leadRoute = (io = {}) => {
   })
 
   // POST request
-  router.post('/by-script/:token', async (req, res, next) => {
-    try {
-      const { token } = req.params
-
-      if (!isValid(token) && token !== '5fdba43af3ad02074da81c07') {
-        invalidToken(res, token)
-        return
-      }
-
-      const { name, phone, customerService, created, updated } = req.body
-
-      const newLead = new Lead({
-        name,
-        phone,
-        customerService,
-        created,
-        updated
-      })
-
-      const savedNewLead = await newLead.save()
-
-      res.status(200).json({
-        status: 200,
-        success: true,
-        message: 'Success save new Lead!',
-        data: savedNewLead
-      })
-    } catch (e) {
-      next('Can\t save new Lead!', e)
-    }
-  })
-
   router.post('/', async (req, res, next) => {
     try {
       const { name, phone } = req.body
@@ -206,6 +174,38 @@ console.log('data', data)
       })
     } catch (e) {
       next('Can\t save new Lead!', e)
+    }
+  })
+
+  router.post('/:token', async (req, res, next) => {
+    try {
+      const { token } = req.params
+
+      if (token !== 'token-5fdba43af3ad02074da81c07') {
+        invalidToken(res, token)
+        return
+      }
+
+      const { name, phone, customerService, created, updated } = req.body
+
+      const newLead = new Lead({
+        name,
+        phone,
+        customerService,
+        created,
+        updated
+      })
+
+      const savedNewLead = await newLead.save()
+
+      res.status(200).json({
+        status: 200,
+        success: true,
+        message: 'Success save new Lead!',
+        data: savedNewLead
+      })
+    } catch (e) {
+      next('Can\t save new Lead by script!', e)
     }
   })
 
