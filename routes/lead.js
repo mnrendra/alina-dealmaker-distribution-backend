@@ -5,6 +5,8 @@ const { validator } = require('../utils')
 const { Lead, CustomerService } = require('../models')
 const { notAllowedMethod, requireId, invalidField, alreadyCreated, invalidId, notFoundId, invalidToken } = require('../errors')
 
+const { people: googlePeople } = require('../googleapis')
+
 const leadRoute = (io = {}) => {
   // GET request
   router.get('/', async (req, res, next) => {
@@ -100,6 +102,152 @@ const leadRoute = (io = {}) => {
 
   // POST request
   router.post('/', async (req, res, next) => {
+    const getCS = async (activeCSs) => {
+      try {
+        const isEnd = i => i === (activeCSs.length - 1)
+
+        let currentTurn = {}
+        let nextTurn = {}
+
+        for (let i = 0; i < activeCSs.length; i++) {
+          if (activeCSs[i].isTurn) {
+            currentTurn = activeCSs[i]
+            nextTurn = isEnd(i)
+              ? activeCSs[0]
+              : activeCSs[i + 1]
+            break
+          } else if (isEnd(i)) {
+            currentTurn = activeCSs[0]
+            nextTurn = activeCSs[1]
+          }
+        }
+
+        currentTurn.isTurn = false
+        const updatedCurrentTurn = await currentTurn.save()
+
+        nextTurn.isTurn = true
+        await nextTurn.save()
+
+        return updatedCurrentTurn
+      } catch (e) {
+        throw new Error(e)
+      }
+    }
+
+    const getLeadIDNumber = (createdAt) => {
+      const createdTime = new Date(createdAt)
+      const createdYY = String(createdTime.getFullYear()).slice(2, 4)
+      const createdMonth = createdTime.getMonth() + 1
+      const createdMM = createdMonth < 10 ? '0' + createdMonth : createdMonth
+      const createdDate = createdTime.getDate()
+      const createdDD = createdDate < 10 ? '0' + createdDate : createdDate
+
+      const createdHours = createdTime.getHours()
+      const createdhh = createdHours < 10 ? '0' + createdHours : createdHours
+      const createdMinutes = createdTime.getMinutes()
+      const createdmm = createdMinutes < 10 ? '0' + createdMinutes : createdMinutes
+      const createdSeconds = createdTime.getSeconds()
+      const createdss = createdSeconds < 10 ? '0' + createdSeconds : createdSeconds
+
+      const leadID = `${createdYY}${createdMM}${createdDD}-${createdhh}${createdmm}${createdss}-1`
+
+      return leadID
+    }
+
+    const savingLead = async (lead, cs, changed = {}) => {
+      try {
+        const { name, phone, logs } = lead
+        let newLogs = []
+        let isNewLead = false
+        const { from, to } = changed
+
+        if (logs) {
+          if (from && to) {
+            logs.push({
+              type: 'LEADING',
+              noted: { type: 'CHANGE-CUSTOMER-SERVICE', from, to }
+            })
+            newLogs = logs
+          } else {
+            logs.push({
+              type: 'LEADING',
+              noted: {}
+            })
+            newLogs = logs
+          }
+        } else {
+          newLogs = [{
+            type: 'LEADING',
+            noted: {}
+          }]
+          isNewLead = true
+        }
+
+        let leadData = {}
+
+        if (isNewLead) {
+          const newLead = new Lead({
+            name: name,
+            phone: phone,
+            customerService: cs._id,
+            logs: newLogs
+          })
+
+          const savedNewLead = await newLead.save()
+
+          const leadIDNumber = getLeadIDNumber(savedNewLead.created)
+          savedNewLead.idNumber = leadIDNumber
+
+          const contactData = await googlePeople.createContact({
+            firstName: leadIDNumber,
+            lastName: cs.name,
+            phone: savedNewLead.phone
+          })
+
+          savedNewLead.googleContact = contactData
+
+          const updatedNewLead = await savedNewLead.save()
+
+          leadData = updatedNewLead
+        } else {
+          lead.customerService = cs._id
+          lead.logs = newLogs
+
+          const updatedExistingLead = await lead.save()
+
+          const contactData = await googlePeople.updateContact(
+            updatedExistingLead.googleContact.resourceName,
+            updatedExistingLead.googleContact.etag,
+            { firstName: updatedExistingLead.idNumber, lastName: cs.name, phone: updatedExistingLead.phone }
+          )
+
+          updatedExistingLead.googleContact = contactData
+
+          const finalUpdatedExistingLead = await updatedExistingLead.save()
+
+          leadData = finalUpdatedExistingLead
+        }
+
+        const data = {
+          _id: leadData._id,
+          id: leadData._id,
+          idNumber: leadData.idNumber,
+          name: leadData.name,
+          phone: leadData.phone,
+          customerServiceId: leadData.customerService,
+          created: leadData.created,
+          updated: leadData.updated,
+          customerService: cs
+        }
+
+        io.to('' + leadData.customerService).emit('new-leads', data)
+
+        return data
+      } catch (e) {
+        throw new Error(e)
+      }
+    }
+
     try {
       const { name, phone } = req.body
 
@@ -109,70 +257,47 @@ const leadRoute = (io = {}) => {
         invalidField(res, 'Invalid phone number!')
         return
       }
-console.log('G', { validPhone, dialCode, cellularCode })
-      const customerServices = await CustomerService.find()
-      const activeCustomerServices = customerServices.filter(cs => cs.active && !cs.terminate)
-console.log('F', { customerServices, activeCustomerServices })
-      const isEnd = i => i === (activeCustomerServices.length - 1)
 
-      let currentTurn = {}
-      let nextTurn = {}
-      for (let i = 0; i < activeCustomerServices.length; i++) {
-        if (activeCustomerServices[i].isTurn) {
-          currentTurn = activeCustomerServices[i]
-          nextTurn = isEnd(i)
-            ? activeCustomerServices[0]
-            : activeCustomerServices[i + 1]
-          break
-        } else if (isEnd(i)) {
-          currentTurn = activeCustomerServices[0]
-          nextTurn = activeCustomerServices[1]
+      const existingLead = await Lead.findOne({ phone: validPhone })
+      const allCSs = await CustomerService.find()
+      const allActiveCSs = allCSs.filter(cs => cs.active && !cs.terminate)
+
+      let data = {}
+
+      if (existingLead) {
+        const existingCS = allCSs.find(cs => String(cs._id) === String(existingLead.customerService)) || {}
+        existingLead.name = name
+        if (existingCS.active === true && existingCS.terminate === false) {
+          data = await savingLead(
+            existingLead,
+            existingCS
+          )
+        } else {
+          const turnedCS = await getCS(allActiveCSs)
+          data = await savingLead(
+            existingLead,
+            turnedCS,
+            { from: existingLead.customerService, to: turnedCS._id }
+          )
         }
+      } else {
+        const turnedCS = await getCS(allActiveCSs)
+        data = await savingLead(
+          { name, phone: validPhone },
+          turnedCS
+        )
       }
-console.log('E', { currentTurn, nextTurn })
-      const newLead = new Lead({
-        name,
-        phone: validPhone,
-        customerServiceId: currentTurn._id,
-        customerService: currentTurn._id
-      })
-console.log('D', newLead)
-      const savedNewLead = await newLead.save()
-
-      currentTurn.isTurn = false
-      const updatedCurrentTurn = await currentTurn.save()
-
-      nextTurn.isTurn = true
-      const updatedNextTurn = await nextTurn.save()
-
-      const cs = customerServices.find(cs => cs._id === savedNewLead.customerService)
-console.log('C', cs)
-      const data = {
-        _id: savedNewLead._id,
-        id: savedNewLead._id,
-        name: savedNewLead.name,
-        phone: savedNewLead.phone,
-        customerServiceId: savedNewLead.customerService,
-        customerService: cs,
-        created: savedNewLead.created,
-        updated: savedNewLead.updated
-      }
-console.log('A', data)
-      io.to('' + updatedCurrentTurn._id).emit('new-leads', data)
-
-console.log('data', data)
 
       res.status(200).json({
         status: 200,
         success: true,
         message: 'Success save new Lead!',
         data: {
-          ...data,
-          currentCustomerService: updatedCurrentTurn._id,
-          nextCustomerService: updatedNextTurn._id
+          ...data
         }
       })
     } catch (e) {
+      console.log('E', e)
       next('Can\t save new Lead!', e)
     }
   })
