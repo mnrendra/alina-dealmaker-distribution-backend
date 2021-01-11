@@ -5,6 +5,8 @@ const { validator } = require('../utils')
 const { Lead, CustomerService } = require('../models')
 const { notAllowedMethod, requireId, invalidField, alreadyCreated, invalidId, notFoundId, invalidToken } = require('../errors')
 
+const { people: googlePeople } = require('../googleapis')
+
 const leadRoute = (io = {}) => {
   // GET request
   router.get('/', async (req, res, next) => {
@@ -109,10 +111,10 @@ const leadRoute = (io = {}) => {
         invalidField(res, 'Invalid phone number!')
         return
       }
-console.log('G', { validPhone, dialCode, cellularCode })
+
       const customerServices = await CustomerService.find()
       const activeCustomerServices = customerServices.filter(cs => cs.active && !cs.terminate)
-console.log('F', { customerServices, activeCustomerServices })
+
       const isEnd = i => i === (activeCustomerServices.length - 1)
 
       let currentTurn = {}
@@ -129,15 +131,31 @@ console.log('F', { customerServices, activeCustomerServices })
           nextTurn = activeCustomerServices[1]
         }
       }
-console.log('E', { currentTurn, nextTurn })
+
       const newLead = new Lead({
         name,
         phone: validPhone,
         customerServiceId: currentTurn._id,
         customerService: currentTurn._id
       })
-console.log('D', newLead)
+
       const savedNewLead = await newLead.save()
+
+      const createdTime = new Date(savedNewLead.created)
+      const createdYY = String(createdTime.getFullYear()).slice(2, 4)
+      const createdMonth = createdTime.getMonth() + 1
+      const createdMM = createdMonth < 10 ? '0' + createdMonth : createdMonth
+      const createdDate = createdTime.getDate()
+      const createdDD = createdDate < 10 ? '0' + createdDate : createdDate
+
+      const createdHours = createdTime.getHours()
+      const createdhh = createdHours < 10 ? '0' + createdHours : createdHours
+      const createdMinutes = createdTime.getMinutes()
+      const createdmm = createdMinutes < 10 ? '0' + createdMinutes : createdMinutes
+      const createdSeconds = createdTime.getSeconds()
+      const createdss = createdSeconds < 10 ? '0' + createdSeconds : createdSeconds
+
+      const leadID = `${createdYY}${createdMM}${createdDD}-${createdhh}${createdmm}${createdss}-1`
 
       currentTurn.isTurn = false
       const updatedCurrentTurn = await currentTurn.save()
@@ -146,7 +164,7 @@ console.log('D', newLead)
       const updatedNextTurn = await nextTurn.save()
 
       const cs = customerServices.find(cs => cs._id === savedNewLead.customerService)
-console.log('C', cs)
+
       const data = {
         _id: savedNewLead._id,
         id: savedNewLead._id,
@@ -157,10 +175,12 @@ console.log('C', cs)
         created: savedNewLead.created,
         updated: savedNewLead.updated
       }
-console.log('A', data)
-      io.to('' + updatedCurrentTurn._id).emit('new-leads', data)
 
-console.log('data', data)
+      const contactName = `${leadID} ${cs.name}`
+
+      await googlePeople.createContact({ name: contactName, phone: validPhone })
+
+      io.to('' + updatedCurrentTurn._id).emit('new-leads', data)
 
       res.status(200).json({
         status: 200,
