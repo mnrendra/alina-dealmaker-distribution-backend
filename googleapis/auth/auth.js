@@ -35,14 +35,13 @@ const getNewToken = (oAuth2Client, scopes) => {
       })
 
       rl.question('Enter the code from that page here: ', (code) => {
-        try {
-          rl.close()
+        rl.close()
 
-          const token = oAuth2Client.getToken(code)
-          resolve(token)
-        } catch (e) {
-          reject(e)
-        }
+        oAuth2Client.getToken(code)
+          .then(token => {
+            resolve(token.tokens || token)
+          })
+          .catch(e => reject(e))
       })
     } catch (e) {
       reject(e)

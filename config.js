@@ -5,9 +5,9 @@ const SOCKET_IO_CORS_ORIGIN = 'http://localhost:3000'
 const SOCKET_IO_CORS_ALLOWED_HEADERS = ['lrzvu5v6nlc9nuwz']
 const HASH_KEY = 'CendolD4w3t!'
 
-const GOOGLE_API_CLIENT_ID = '874379942925-fidqnvc69q308cqtr6l2lljqangki75e.apps.googleusercontent.com'
-const GOOGLE_API_CLIENT_SECRET = 'DOqZQqJN9s_bVL0QXJBkqcjz'
-const GOOGLE_API_REDIRECT_URIS = ['http://localhost:8080/callback']
+const GOOGLE_API_CLIENT_ID = '409238977263-kut1ajt2jpoj7p1ept2m7h3v7sa99983.apps.googleusercontent.com'
+const GOOGLE_API_CLIENT_SECRET = 'mGR2206TtmNCXqhwxjszi02x'
+const GOOGLE_API_REDIRECT_URIS = ['http://localhost:3001/callback-googleapis']
 const GOOGLE_API_SCOPES = ['https://www.googleapis.com/auth/contacts']
 
 module.exports = {

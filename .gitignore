@@ -24,3 +24,5 @@ yarn-error.log*
 
 # google api stored token
 /googleapis/auth/json/stored_token.json
+*/stored_token.json
+**/stored_token.json
